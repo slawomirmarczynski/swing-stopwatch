@@ -19,29 +19,14 @@ public class UserInterface implements ObjectObserver {
             EventQueue.invokeAndWait(() -> {
                 createMainWindow();
                 addDisplay();
-                addButton("Start", 1, 0, ()->stopWatch.start());
-                addButton("Stop", 1, 1, ()->stopWatch.stop());
-                addButton("Reset", 1, 2, ()->stopWatch.reset());
+                addButton("Start", 1, 0, () -> stopWatch.start());
+                addButton("Stop", 1, 1, () -> stopWatch.stop());
+                addButton("Reset", 1, 2, () -> stopWatch.reset());
                 showMainWindow();
             });
         } catch (InterruptedException | InvocationTargetException exception) {
             throw new RuntimeException(exception);
         }
-    }
-
-    public void update() {
-        EventQueue.invokeLater(() -> {
-            display.setText(stopWatch.toString());
-        });
-    }
-
-    public void setStopWatch(StopWatch stopWatch) {
-        this.stopWatch = stopWatch;
-    }
-
-    private void showMainWindow() {
-        frame.pack();
-        frame.setVisible(true);
     }
 
     private void createMainWindow() {
@@ -50,6 +35,11 @@ public class UserInterface implements ObjectObserver {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(false);
         frame.setLayout(new GridBagLayout());
+    }
+
+    private void showMainWindow() {
+        frame.pack();
+        frame.setVisible(true);
     }
 
     private void addDisplay() {
@@ -74,5 +64,15 @@ public class UserInterface implements ObjectObserver {
         constraints.gridx = column;
         frame.add(button, constraints);
         button.addActionListener(event -> action.run());
+    }
+
+    public void setStopWatch(StopWatch stopWatch) {
+        this.stopWatch = stopWatch;
+    }
+    
+    public void update() {
+        EventQueue.invokeLater(() -> {
+            display.setText(stopWatch.getValue().toString());
+        });
     }
 }

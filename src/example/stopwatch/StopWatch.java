@@ -52,14 +52,14 @@ public class StopWatch implements Runnable {
         observers.add(observer);
     }
 
-    @Override
-    public String toString() {
+    public Object getValue() {
+        final long nanosecondsPerSeconds = 1_000_000_000;
         long duration;
         if (running) {
             duration = System.nanoTime() - begin;
         } else {
             duration = end - begin;
         }
-        return Long.toString(duration / 1_000_000_000);
+       return duration / nanosecondsPerSeconds;
     }
 }
