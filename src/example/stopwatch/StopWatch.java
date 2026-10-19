@@ -9,23 +9,16 @@ import java.util.List;
  *
  * <p>Pomiar bazuje na {@link System#nanoTime()}, który służy do mierzenia
  * upływu czasu monotonicznego. Wartość zwracana przez {@link #getValue()}
- * jest liczbą całkowitych sekund, a nie precyzyjnym formatem prezentacyjnym.</p>
+ * jest liczbą całkowitych sekund.</p>
  */
 public class StopWatch implements Runnable {
-
-    /** Określa, czy aktualnie trwa pomiar. */
     private boolean running;
+    private final long granularity = 100; // w milisekundach
+    private long begin; // w nanosekundach
+    private long end; // nanosekundach
 
-    /** Odstęp pomiędzy kolejnymi próbami powiadomienia obserwatorów, w ms. */
-    private final long granularity = 100;
-
-    /** Chwila rozpoczęcia bieżącego lub ostatniego pomiaru, w nanosekundach. */
-    private long begin;
-
-    /** Chwila zatrzymania pomiaru; podczas pracy jest odświeżana przez start(). */
-    private long end;
-
-    /** Lista obiektów, które mają być informowane o zmianie wartości stopera. */
+    // Lista obiektów, które mają być informowane o zmianie stanu stopera.
+    //
     private final List<ObjectObserver> observers = new ArrayList<>();
 
     /**
@@ -40,6 +33,7 @@ public class StopWatch implements Runnable {
         // W pętli informuj obserwatorów o aktualnej wartości, po czym uśpij
         // wątek na ustalony czas, aby ograniczyć częstotliwość odświeżeń.
         // Pętla kończy się, gdy wątek zostanie oznaczony jako przerwany.
+        //
         while (!Thread.currentThread().isInterrupted()) {
             notifyObservers();
             try {
@@ -58,9 +52,11 @@ public class StopWatch implements Runnable {
     public void start() {
         // Oznacz pomiar jako aktywny i zapamiętaj aktualny czas jako jego początek.
         // Ustawienie końca na tę samą chwilę oznacza, że początkowy wynik wynosi zero.
+        //
         running = true;
         begin = System.nanoTime();
         end = begin;
+        notifyObservers();
     }
 
     /**
@@ -71,6 +67,7 @@ public class StopWatch implements Runnable {
     public void stop() {
         // Zatrzymaj pomiar tylko wtedy, gdy jest aktywny: zapamiętaj jego koniec
         // i od razu powiadom obserwatorów, by widok nie czekał na kolejny cykl.
+        //
         if (running) {
             running = false;
             end = System.nanoTime();
@@ -85,6 +82,7 @@ public class StopWatch implements Runnable {
     public void reset() {
         // Zakończ ewentualny pomiar i ustaw jego początek oraz koniec
         // na tę samą bieżącą chwilę, co daje wyzerowany wynik.
+        //
         running = false;
         begin = System.nanoTime();
         end = begin;
@@ -94,6 +92,7 @@ public class StopWatch implements Runnable {
     private void notifyObservers() {
         // Przejdź po zarejestrowanych obserwatorach i wywołaj ich metodę
         // update(), pozostawiając każdemu z nich obsługę powiadomienia.
+        //
         for (ObjectObserver observer : observers) {
             observer.update();
         }
@@ -102,12 +101,9 @@ public class StopWatch implements Runnable {
     /**
      * Dodaje obserwatora do listy odbiorców powiadomień.
      *
-     * <p>Metoda jest zsynchronizowana, aby pojedyncza operacja dodania
-     * obserwatora była wykonywana pod blokadą obiektu stopera.</p>
-     *
      * @param observer obiekt, który ma otrzymywać powiadomienia
      */
-    public synchronized void addObserver(ObjectObserver observer) {
+    public void addObserver(ObjectObserver observer) {
         // Dodaj obiekt do listy, z której korzysta metoda notifyObservers().
         observers.add(observer);
     }
@@ -126,6 +122,7 @@ public class StopWatch implements Runnable {
         // dla aktywnego pomiaru względem bieżącej chwili, a dla zatrzymanego
         // względem zapamiętanego końca. Dzielenie całkowitoliczbowe odrzuca
         // niepełną część sekundy.
+
         final long nanosecondsPerSeconds = 1_000_000_000;
         long duration;
         if (running) {

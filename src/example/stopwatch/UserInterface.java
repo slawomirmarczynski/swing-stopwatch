@@ -10,26 +10,16 @@ import java.lang.reflect.InvocationTargetException;
  *
  * <p>Komponenty Swing nie są bezpieczne przy równoczesnym dostępie z wielu
  * wątków. Dlatego tworzenie okna odbywa się w wątku obsługi zdarzeń Swing
- * (EDT), a aktualizacje wyświetlacza są do tego wątku zlecone.</p>
+ * (EDT), a aktualizacje wyświetlacza są do tego wątku zlecane.</p>
  */
 public class UserInterface implements ObjectObserver {
 
-    /** Liczba kolumn zajmowanych przez wyświetlacz w układzie siatki. */
-    final static int horizontalGrids = 3;
+    private final static int horizontalGrids = 3;
+    private final static int verticalGrids = 2;
+    private final static int insetSize = 5;
 
-    /** Wiersz, w którym umieszczany jest wyświetlacz. */
-    final static int verticalGrids = 2;
-
-    /** Margines wokół każdego elementu interfejsu, wyrażony w pikselach. */
-    final static int insetSize = 5;
-
-    /** Główne okno aplikacji. */
     private JFrame frame;
-
-    /** Nieedytowalne pole prezentujące bieżącą wartość stopera. */
     private JTextField display;
-
-    /** Stoper, którego akcjami sterują przyciski i którego wartość jest pokazywana. */
     private StopWatch stopWatch;
 
     /**
@@ -43,6 +33,7 @@ public class UserInterface implements ObjectObserver {
         try {
             // W EDT utwórz okno, dodaj wyświetlacz i przyciski, a następnie
             // dopasuj rozmiar okna i pokaż gotowy interfejs.
+            //
             EventQueue.invokeAndWait(() -> {
                 createMainWindow();
                 addDisplay();
@@ -58,10 +49,9 @@ public class UserInterface implements ObjectObserver {
         }
     }
 
-    /** Konfiguruje właściwości głównego okna oraz jego menedżer układu. */
     private void createMainWindow() {
         // Utwórz główne okno, ustaw jego tytuł i zachowanie przy zamykaniu,
-        // zablokuj zmianę rozmiaru oraz wybierz siatkowy układ kontrolek.
+        // zablokuj zmianę rozmiaru oraz wybierz GridBagLayout jako układ.
         frame = new JFrame();
         frame.setTitle("Stopwatch");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -69,7 +59,6 @@ public class UserInterface implements ObjectObserver {
         frame.setLayout(new GridBagLayout());
     }
 
-    /** Dopasowuje rozmiar okna do jego zawartości i pokazuje je użytkownikowi. */
     private void showMainWindow() {
         // Dopasuj rozmiar okna do dodanych komponentów, a następnie je wyświetl.
         frame.pack();
@@ -82,22 +71,16 @@ public class UserInterface implements ObjectObserver {
      * zmieniających się cyfr.
      */
     private void addDisplay() {
-        // Utwórz pole o szerokości około dziesięciu znaków, zablokuj edycję
-        // i wyrównaj wyświetlaną wartość do prawej strony.
-        display = new JTextField(10);
+        final int fieldSizeInCharacters = 10;
+        display = new JTextField(fieldSizeInCharacters);
         display.setEditable(false);
         display.setHorizontalAlignment(JTextField.RIGHT);
-
-        // Skonfiguruj układ pola: rozciągnij je poziomo, przydziel równy margines,
-        // ustaw szerokość na trzy kolumny i umieść je w pierwszym wierszu.
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.fill = GridBagConstraints.HORIZONTAL;
         constraints.insets = new Insets(insetSize, insetSize, insetSize, insetSize);
         constraints.gridwidth = horizontalGrids;
         constraints.gridx = 0;
         constraints.gridy = 0;
-
-        // Dodaj skonfigurowane pole tekstowe do głównego okna.
         frame.add(display, constraints);
     }
 
@@ -110,22 +93,18 @@ public class UserInterface implements ObjectObserver {
      * @param action  operacja wykonywana po kliknięciu przycisku
      */
     private void addButton(String name, int row, int column, Runnable action) {
-        // Utwórz przycisk i skonfiguruj jego rozmieszczenie: wypełnianie
-        // komórki w poziomie, równy margines oraz wskazany wiersz i kolumnę.
         JButton button = new JButton(name);
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.fill = GridBagConstraints.HORIZONTAL;
         constraints.insets = new Insets(insetSize, insetSize, insetSize, insetSize);
         constraints.gridy = row;
         constraints.gridx = column;
-
-        // Dodaj przycisk do okna i przypisz mu akcję wykonywaną po kliknięciu.
         frame.add(button, constraints);
         button.addActionListener(event -> action.run());
     }
 
     /**
-     * Ustawia obiekt stopera obsługiwany przez interfejs.
+     * Zapamiętuje obiekt stopera obsługiwany przez interfejs.
      *
      * @param stopWatch stoper, którego metody wywołują przyciski i którego
      *                  aktualna wartość jest prezentowana w oknie
