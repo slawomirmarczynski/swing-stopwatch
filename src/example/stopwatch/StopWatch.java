@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class StopWatch implements Runnable {
     private boolean running;
-    private final long granularity = 100; // w milisekundach
+    private static final long GRANULARITY = 100; // w milisekundach
     private long begin; // w nanosekundach
     private long end; // nanosekundach
 
@@ -25,8 +25,7 @@ public class StopWatch implements Runnable {
      * Cyklicznie informuje obserwatorów o wartości stopera.
      *
      * <p>Pętla działa do momentu, gdy wątek zostanie oznaczony jako przerwany.
-     * Między powiadomieniami usypia na czas określony przez {@link #granularity}.
-     * W razie przerwania podczas uśpienia wyjątek jest obecnie ignorowany.</p>
+     * Między powiadomieniami usypia na czas określony przez {@link #GRANULARITY}.</p>
      */
     @Override
     public void run() {
@@ -37,7 +36,7 @@ public class StopWatch implements Runnable {
         while (!Thread.currentThread().isInterrupted()) {
             notifyObservers();
             try {
-                Thread.sleep(granularity);
+                Thread.sleep(GRANULARITY);
             } catch (InterruptedException e) {
                 break;
             }
@@ -85,6 +84,7 @@ public class StopWatch implements Runnable {
         running = false;
         begin = System.nanoTime();
         end = begin;
+        notifyObservers();
     }
 
     /** Wywołuje {@link ObjectObserver#update()} u każdego zarejestrowanego obserwatora. */
@@ -122,13 +122,13 @@ public class StopWatch implements Runnable {
         // względem zapamiętanego końca. Dzielenie całkowitoliczbowe odrzuca
         // niepełną część sekundy.
 
-        final long nanosecondsPerSeconds = 1_000_000_000;
+        final long NANOSECONDS_PER_SECONDS = 1_000_000_000;
         long duration;
         if (running) {
             duration = System.nanoTime() - begin;
         } else {
             duration = end - begin;
         }
-        return duration / nanosecondsPerSeconds;
+        return duration / NANOSECONDS_PER_SECONDS;
     }
 }

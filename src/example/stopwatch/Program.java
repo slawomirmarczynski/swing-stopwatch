@@ -56,7 +56,7 @@ public class Program implements Runnable {
      *             ale chcieliśmy zachować pełną zgodność ze standardami,
      *             także tymi starszymi
      */
-    static void main(String[] args) {
+    public static void main(String[] args) {
         // Ustaw skalę renderowania elementów Swing, wybierz jasny motyw,
         // a następnie utwórz i uruchom obiekt koordynujący aplikację.
         //
