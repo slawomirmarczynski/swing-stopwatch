@@ -39,8 +39,7 @@ public class StopWatch implements Runnable {
             try {
                 Thread.sleep(granularity);
             } catch (InterruptedException e) {
-                // Wyjątek jest ignorowany. Ponieważ sleep() czyści znacznik
-                // przerwania, w tej implementacji pętla będzie kontynuowana.
+                break;
             }
         }
     }
