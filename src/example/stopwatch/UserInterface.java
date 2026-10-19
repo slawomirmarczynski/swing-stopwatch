@@ -15,7 +15,7 @@ import java.lang.reflect.InvocationTargetException;
 public class UserInterface implements ObjectObserver {
 
     private final static int horizontalGrids = 3;
-    private final static int verticalGrids = 2;
+    //    private final static int verticalGrids = 2;
     private final static int insetSize = 5;
 
     private JFrame frame;
@@ -47,6 +47,32 @@ public class UserInterface implements ObjectObserver {
             // kontynuować działanie aplikacji bez poprawnie utworzonego okna.
             throw new RuntimeException(exception);
         }
+    }
+
+    /**
+     * Zapamiętuje obiekt stopera obsługiwany przez interfejs.
+     *
+     * @param stopWatch stoper, którego metody wywołują przyciski i którego
+     *                  aktualna wartość jest prezentowana w oknie
+     */
+    public void setStopWatch(StopWatch stopWatch) {
+        // Zapamiętaj model wykorzystywany przez akcje przycisków
+        // oraz przez kod odświeżający wyświetlaną wartość.
+        this.stopWatch = stopWatch;
+    }
+
+    /**
+     * Powiadamia interfejs o zmianie stanu obserwowanego obiektu i odświeża
+     * wyświetlaną wartość.
+     *
+     * <p>Odświeżenie jest dodawane do kolejki EDT, zamiast wykonywać operację
+     * bezpośrednio w wątku, z którego przyszło powiadomienie. Dzięki temu
+     * modyfikacja komponentu Swing odbywa się w bezpiecznym dla niego wątku.</p>
+     */
+    public void update() {
+        // Zleć aktualizację wątkowi EDT, a w nim pobierz bieżącą wartość modelu
+        // i ustaw ją jako tekst wyświetlacza.
+        EventQueue.invokeLater(() -> display.setText(stopWatch.getValue().toString()));
     }
 
     private void createMainWindow() {
@@ -87,10 +113,10 @@ public class UserInterface implements ObjectObserver {
     /**
      * Dodaje przycisk do wskazanego wiersza i kolumny okna.
      *
-     * @param name    tekst widoczny na przycisku
-     * @param row     indeks wiersza w układzie siatki
-     * @param column  indeks kolumny w układzie siatki
-     * @param action  operacja wykonywana po kliknięciu przycisku
+     * @param name   tekst widoczny na przycisku
+     * @param row    indeks wiersza w układzie siatki
+     * @param column indeks kolumny w układzie siatki
+     * @param action operacja wykonywana po kliknięciu przycisku
      */
     private void addButton(String name, int row, int column, Runnable action) {
         JButton button = new JButton(name);
@@ -101,33 +127,5 @@ public class UserInterface implements ObjectObserver {
         constraints.gridx = column;
         frame.add(button, constraints);
         button.addActionListener(event -> action.run());
-    }
-
-    /**
-     * Zapamiętuje obiekt stopera obsługiwany przez interfejs.
-     *
-     * @param stopWatch stoper, którego metody wywołują przyciski i którego
-     *                  aktualna wartość jest prezentowana w oknie
-     */
-    public void setStopWatch(StopWatch stopWatch) {
-        // Zapamiętaj model wykorzystywany przez akcje przycisków
-        // oraz przez kod odświeżający wyświetlaną wartość.
-        this.stopWatch = stopWatch;
-    }
-    
-    /**
-     * Powiadamia interfejs o zmianie stanu obserwowanego obiektu i odświeża
-     * wyświetlaną wartość.
-     *
-     * <p>Odświeżenie jest dodawane do kolejki EDT, zamiast wykonywać operację
-     * bezpośrednio w wątku, z którego przyszło powiadomienie. Dzięki temu
-     * modyfikacja komponentu Swing odbywa się w bezpiecznym dla niego wątku.</p>
-     */
-    public void update() {
-        // Zleć aktualizację wątkowi EDT, a w nim pobierz bieżącą wartość modelu
-        // i ustaw ją jako tekst wyświetlacza.
-        EventQueue.invokeLater(() -> {
-            display.setText(stopWatch.getValue().toString());
-        });
     }
 }
