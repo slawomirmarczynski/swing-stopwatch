@@ -12,10 +12,9 @@ import java.lang.reflect.InvocationTargetException;
  * wątków. Dlatego tworzenie okna odbywa się w wątku obsługi zdarzeń Swing
  * (EDT), a aktualizacje wyświetlacza są do tego wątku zlecane.</p>
  */
-public class UserInterface implements ObjectObserver {
+public class UserInterface {
 
     private final static int horizontalGrids = 3;
-    //    private final static int verticalGrids = 2;
     private final static int insetSize = 5;
 
     private JFrame frame;
@@ -29,7 +28,9 @@ public class UserInterface implements ObjectObserver {
      * sprawia, że konstruktor wraca dopiero po utworzeniu interfejsu,
      * dzięki czemu dalsza inicjalizacja może korzystać z gotowych komponentów.</p>
      */
-    UserInterface() {
+    UserInterface(StopWatch stopWatch) {
+        this.stopWatch = stopWatch;
+        stopWatch.userInterface = this;
         try {
             // W EDT utwórz okno, dodaj wyświetlacz i przyciski, a następnie
             // dopasuj rozmiar okna i pokaż gotowy interfejs.
@@ -37,9 +38,9 @@ public class UserInterface implements ObjectObserver {
             EventQueue.invokeAndWait(() -> {
                 createMainWindow();
                 addDisplay();
-                addButton("Start", 1, 0, () -> stopWatch.start());
-                addButton("Stop", 1, 1, () -> stopWatch.stop());
-                addButton("Reset", 1, 2, () -> stopWatch.reset());
+                addButton("Start", 1, 0, stopWatch::start);
+                addButton("Stop", 1, 1, stopWatch::stop);
+                addButton("Reset", 1, 2, stopWatch::reset);
                 showMainWindow();
             });
         } catch (InterruptedException | InvocationTargetException exception) {
@@ -50,31 +51,17 @@ public class UserInterface implements ObjectObserver {
     }
 
     /**
-     * Zapamiętuje obiekt stopera obsługiwany przez interfejs.
-     *
-     * @param stopWatch stoper, którego metody wywołują przyciski i którego
-     *                  aktualna wartość jest prezentowana w oknie
-     */
-    public void setStopWatch(StopWatch stopWatch) {
-        // Zapamiętaj model wykorzystywany przez akcje przycisków
-        // oraz przez kod odświeżający wyświetlaną wartość.
-        this.stopWatch = stopWatch;
-    }
-
-    /**
-     * Powiadamia interfejs o zmianie stanu obserwowanego obiektu i odświeża
-     * wyświetlaną wartość.
+     * Odświeża wyświetlaną wartość stopera.
      *
      * <p>Odświeżenie jest dodawane do kolejki EDT, zamiast wykonywać operację
      * bezpośrednio w wątku, z którego przyszło powiadomienie. Dzięki temu
      * modyfikacja komponentu Swing odbywa się w bezpiecznym dla niego wątku.</p>
-     *
-     * @param sender obiekt, którego zmiana wywołała powiadomienie
      */
-    public void update(ObjectObservable sender) {
-        // Zleć aktualizację wątkowi EDT, a w nim pobierz bieżącą wartość modelu
-        // i ustaw ją jako tekst wyświetlacza.
-        EventQueue.invokeLater(() -> display.setText(sender.getValue().toString()));
+    public void update() {
+        // Zleć aktualizację wątkowi EDT, a w nim pobierz bieżącą wartość stopera
+        // i ustaw ją jako tekst wyświetlacza. Dlaczego tak? Bo ta metoda będzie
+        // wywoływana być może z innego wątku niż EDT.
+        EventQueue.invokeLater(() -> display.setText(stopWatch.getValue() + " seconds"));
     }
 
     private void createMainWindow() {
