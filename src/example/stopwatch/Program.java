@@ -1,8 +1,6 @@
 package example.stopwatch;
 
 import javax.swing.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Klasa uruchomieniowa aplikacji.
@@ -89,8 +87,8 @@ public class Program implements Runnable {
                     }
                 }
             }
-        } catch (Exception ex) {
-            Logger.getLogger(Program.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (Exception exception) {
+            // ignorujemy wyjątek
         }
     }
 }
