@@ -12,6 +12,8 @@ public interface ObjectObserver {
     /**
      * Wywoływana przez obserwowany obiekt, aby zasygnalizować zmianę stanu
      * wymagającą reakcji obserwatora.
+     *
+     * @param sender obiekt, którego zmiana wywołała powiadomienie
      */
-    void update();
+    void update(ObjectObservable sender);
 }

@@ -11,7 +11,7 @@ import java.util.List;
  * upływu czasu monotonicznego. Wartość zwracana przez {@link #getValue()}
  * jest liczbą całkowitych sekund.</p>
  */
-public class StopWatch implements Runnable {
+public class StopWatch implements Runnable, ObjectObservable {
     private boolean running;
     private static final long GRANULARITY = 100; // w milisekundach
     private long begin; // w nanosekundach
@@ -87,13 +87,12 @@ public class StopWatch implements Runnable {
         notifyObservers();
     }
 
-    /** Wywołuje {@link ObjectObserver#update()} u każdego zarejestrowanego obserwatora. */
     private void notifyObservers() {
         // Przejdź po zarejestrowanych obserwatorach i wywołaj ich metodę
         // update(), pozostawiając każdemu z nich obsługę powiadomienia.
         //
         for (ObjectObserver observer : observers) {
-            observer.update();
+            observer.update(this);
         }
     }
 

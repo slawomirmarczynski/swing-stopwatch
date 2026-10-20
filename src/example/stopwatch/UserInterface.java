@@ -68,11 +68,13 @@ public class UserInterface implements ObjectObserver {
      * <p>Odświeżenie jest dodawane do kolejki EDT, zamiast wykonywać operację
      * bezpośrednio w wątku, z którego przyszło powiadomienie. Dzięki temu
      * modyfikacja komponentu Swing odbywa się w bezpiecznym dla niego wątku.</p>
+     *
+     * @param sender obiekt, którego zmiana wywołała powiadomienie
      */
-    public void update() {
+    public void update(ObjectObservable sender) {
         // Zleć aktualizację wątkowi EDT, a w nim pobierz bieżącą wartość modelu
         // i ustaw ją jako tekst wyświetlacza.
-        EventQueue.invokeLater(() -> display.setText(stopWatch.getValue().toString()));
+        EventQueue.invokeLater(() -> display.setText(sender.getValue().toString()));
     }
 
     private void createMainWindow() {
