@@ -29,10 +29,13 @@ public class StopWatch implements Runnable {
         // wątek. Przerwanie bieżącego wątku kończy pętlę.
         //
         while (!Thread.currentThread().isInterrupted()) {
-            userInterface.update();
+            if (userInterface != null) {
+                userInterface.update();
+            }
             try {
                 Thread.sleep(GRANULARITY);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 break;
             }
         }

@@ -1,120 +1,141 @@
 package example.stopwatch;
 
-import javax.swing.*;
-import java.awt.*;
-import java.lang.reflect.InvocationTargetException;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontData;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.*;
 
-/**
- * Okno graficzne stopera. Klasa tworzy interfejs Swing, przekazuje polecenia
- * użytkownika do obiektu {@link StopWatch} i wyświetla aktualną wartość stopera.
- *
- * <p>Komponenty Swing nie są bezpieczne przy równoczesnym dostępie z wielu
- * wątków. Dlatego tworzenie okna odbywa się w wątku obsługi zdarzeń Swing
- * (EDT), a aktualizacje wyświetlacza są do tego wątku zlecane.</p>
- */
-public class UserInterface {
+public class UserInterface implements Runnable {
 
-    private final static int horizontalGrids = 3;
-    private final static int insetSize = 5;
+    private static final int horizontalGrids = 3;
+    private static final int insetSize = 10;
+    private static final int uiScale = 2;
 
-    private JFrame frame;
-    private JTextField display;
-    private StopWatch stopWatch;
+    private final Object updateLock = new Object();
+    private final StopWatch stopWatch;
+    private final Thread applicationThread;
 
-    /**
-     * Tworzy okno, wyświetlacz i przyciski sterujące.
-     *
-     * <p>Cała konfiguracja jest wykonywana w EDT. {@code invokeAndWait}
-     * sprawia, że konstruktor wraca dopiero po utworzeniu interfejsu,
-     * dzięki czemu dalsza inicjalizacja może korzystać z gotowych komponentów.</p>
-     */
+    private Display swtDisplay;
+    private Shell shell;
+    private Font scaledFont;
+    private Text display;
+    private boolean closed;
+
     UserInterface(StopWatch stopWatch) {
         this.stopWatch = stopWatch;
+        applicationThread = Thread.currentThread();
         stopWatch.userInterface = this;
+
+        Thread uiThread = new Thread(this, "stopwatch-swt-ui");
+        uiThread.start();
+    }
+
+    /**
+     * Główna pętla obsługi zdarzeń SWT.
+     */
+    public void run() {
         try {
-            // W EDT utwórz okno, dodaj wyświetlacz i przyciski, a następnie
-            // dopasuj rozmiar okna i pokaż gotowy interfejs.
-            //
-            EventQueue.invokeAndWait(() -> {
+            synchronized (updateLock) {
+                swtDisplay = new Display();
+                FontData[] fontData = swtDisplay.getSystemFont().getFontData();
+                for (FontData data : fontData) {
+                    data.setHeight(data.getHeight() * uiScale);
+                }
+                scaledFont = new Font(swtDisplay, fontData);
+
+                shell = new Shell(swtDisplay, SWT.SHELL_TRIM | SWT.RESIZE);
+                shell.setFont(scaledFont);
                 createMainWindow();
                 addDisplay();
-                addButton("Start", 1, 0, stopWatch::start);
-                addButton("Stop", 1, 1, stopWatch::stop);
-                addButton("Reset", 1, 2, stopWatch::reset);
+
+                addButton("Start", stopWatch::start);
+                addButton("Stop", stopWatch::stop);
+                addButton("Reset", stopWatch::reset);
+
+                display.setText(stopWatch.getValue() + " seconds");
                 showMainWindow();
-            });
-        } catch (InterruptedException | InvocationTargetException exception) {
-            // Zgłoś błąd inicjalizacji jako wyjątek czasu wykonania, zamiast
-            // kontynuować działanie aplikacji bez poprawnie utworzonego okna.
-            throw new RuntimeException(exception);
+            }
+
+            while (!shell.isDisposed()) {
+                if (!swtDisplay.readAndDispatch()) {
+                    swtDisplay.sleep();
+                }
+            }
+        } finally {
+            synchronized (updateLock) {
+                closed = true;
+            }
+            if (shell != null && !shell.isDisposed()) {
+                shell.dispose();
+            }
+            if (scaledFont != null && !scaledFont.isDisposed()) {
+                scaledFont.dispose();
+            }
+            if (swtDisplay != null && !swtDisplay.isDisposed()) {
+                swtDisplay.dispose();
+            }
+            applicationThread.interrupt();
         }
     }
 
     /**
-     * Odświeża wyświetlaną wartość stopera.
-     *
-     * <p>Odświeżenie jest dodawane do kolejki EDT, zamiast wykonywać operację
-     * bezpośrednio w wątku, z którego przyszło powiadomienie. Dzięki temu
-     * modyfikacja komponentu Swing odbywa się w bezpiecznym dla niego wątku.</p>
+     * Aktualizacja wyświetlacza z bezpiecznym przejściem do wątku GUI.
      */
     public void update() {
-        // Zleć aktualizację wątkowi EDT, a w nim pobierz bieżącą wartość stopera
-        // i ustaw ją jako tekst wyświetlacza. Dlaczego tak? Bo ta metoda będzie
-        // wywoływana być może z innego wątku niż EDT.
-        EventQueue.invokeLater(() -> display.setText(stopWatch.getValue() + " seconds"));
+        synchronized (updateLock) {
+            if (closed || swtDisplay == null || display == null) {
+                return;
+            }
+
+            swtDisplay.asyncExec(() -> {
+                if (!display.isDisposed()) {
+                    display.setText(stopWatch.getValue() + " seconds");
+                }
+            });
+        }
     }
 
     private void createMainWindow() {
-        // Utwórz główne okno, ustaw jego tytuł i zachowanie przy zamykaniu,
-        // zablokuj zmianę rozmiaru oraz wybierz GridBagLayout jako układ.
-        frame = new JFrame();
-        frame.setTitle("Stopwatch");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setResizable(false);
-        frame.setLayout(new GridBagLayout());
+        shell.setText("Stopwatch");
+
+        GridLayout layout = new GridLayout(horizontalGrids, true);
+        layout.marginWidth = insetSize;
+        layout.marginHeight = insetSize;
+        layout.horizontalSpacing = insetSize;
+        layout.verticalSpacing = insetSize;
+
+        shell.setLayout(layout);
     }
 
     private void showMainWindow() {
-        // Dopasuj rozmiar okna do dodanych komponentów, a następnie je wyświetl.
-        frame.pack();
-        frame.setVisible(true);
+        shell.pack();
+        shell.setMinimumSize(shell.getSize());
+        shell.open();
     }
 
-    /**
-     * Tworzy pole tekstowe pokazujące czas i umieszcza je w pierwszym wierszu.
-     * Pole jest tylko do odczytu, a wyrównanie do prawej ułatwia obserwowanie
-     * zmieniających się cyfr.
-     */
     private void addDisplay() {
         final int fieldSizeInCharacters = 10;
-        display = new JTextField(fieldSizeInCharacters);
-        display.setEditable(false);
-        display.setHorizontalAlignment(JTextField.RIGHT);
-        GridBagConstraints constraints = new GridBagConstraints();
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.insets = new Insets(insetSize, insetSize, insetSize, insetSize);
-        constraints.gridwidth = horizontalGrids;
-        constraints.gridx = 0;
-        constraints.gridy = 0;
-        frame.add(display, constraints);
+
+        display = new Text(shell, SWT.BORDER | SWT.READ_ONLY | SWT.RIGHT);
+
+        GridData data = new GridData(SWT.FILL, SWT.CENTER, true, false);
+        data.horizontalSpan = horizontalGrids;
+        data.widthHint = fieldSizeInCharacters * 20;
+
+        display.setLayoutData(data);
+        display.setFont(scaledFont);
     }
 
-    /**
-     * Dodaje przycisk do wskazanego wiersza i kolumny okna.
-     *
-     * @param name   tekst widoczny na przycisku
-     * @param row    indeks wiersza w układzie siatki
-     * @param column indeks kolumny w układzie siatki
-     * @param action operacja wykonywana po kliknięciu przycisku
-     */
-    private void addButton(String name, int row, int column, Runnable action) {
-        JButton button = new JButton(name);
-        GridBagConstraints constraints = new GridBagConstraints();
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.insets = new Insets(insetSize, insetSize, insetSize, insetSize);
-        constraints.gridy = row;
-        constraints.gridx = column;
-        frame.add(button, constraints);
-        button.addActionListener(event -> action.run());
+    private void addButton(String name, Runnable action) {
+        Button button = new Button(shell, SWT.PUSH);
+        button.setText(name);
+        button.setFont(scaledFont);
+
+        button.setLayoutData(
+                new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        button.addListener(SWT.Selection, event -> action.run());
     }
 }
