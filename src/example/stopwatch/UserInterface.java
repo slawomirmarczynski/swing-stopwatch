@@ -118,6 +118,6 @@ public class UserInterface {
         constraints.gridy = row;
         constraints.gridx = column;
         frame.add(button, constraints);
-        button.addActionListener(event -> action.run());
+        button.addActionListener(_ -> action.run());
     }
 }
