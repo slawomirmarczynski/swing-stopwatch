@@ -27,27 +27,21 @@
 package example.stopwatch;
 
 public class StopWatchTraced extends StopWatch {
-    private final Tracer tracer;
-
-    StopWatchTraced(Tracer tracer) {
-        this.tracer = tracer;
-    }
-
     @Override
     public void start() {
         super.start();
-        tracer.start();
+        Tracer.getInstance().log(this, "start");
     }
 
     @Override
     public void stop() {
         super.stop();
-        tracer.stop();
+        Tracer.getInstance().log(this, "stop");
     }
 
     @Override
     public void reset() {
         super.reset();
-        tracer.reset();
+        Tracer.getInstance().log(this, "reset");
     }
 }
