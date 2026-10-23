@@ -26,10 +26,9 @@
 
 package example.stopwatch;
 
-import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -40,7 +39,7 @@ public class Tracer {
 
     private static volatile Tracer instance;
 
-    private BufferedWriter writer;
+    private PrintWriter writer;
 
     private Tracer() {
     }
@@ -57,16 +56,15 @@ public class Tracer {
     }
 
     public synchronized void log(StopWatch sw, String message) {
-        try {
-            if (writer == null) {
-                writer = new BufferedWriter(new FileWriter("trace.txt", true));
+        if (writer == null) {
+            try {
+                writer = new PrintWriter(new FileWriter("trace.txt", true));
+            } catch (IOException ignored) {
+                return;
             }
-            writer.write(LocalDateTime.now().format(TIMESTAMP_FORMAT)
-                    + " " + String.format(Locale.ROOT, "%.2f", sw.getValue()) + " # " + message
-                    + System.lineSeparator());
-            writer.flush();
-        } catch (IOException e) {
-            throw new UncheckedIOException("Nie można dopisać wpisu do trace.txt", e);
         }
+        writer.println(LocalDateTime.now().format(TIMESTAMP_FORMAT)
+                + " " + String.format(Locale.ROOT, "%.2f", sw.getValue()) + " # " + message);
+        writer.flush();
     }
 }
