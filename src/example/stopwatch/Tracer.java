@@ -64,7 +64,7 @@ public class Tracer {
             }
         }
         writer.println(LocalDateTime.now().format(TIMESTAMP_FORMAT)
-                + " " + String.format(Locale.ROOT, "%.2f", sw.getValue()) + " # " + message);
+                + " " + sw.getValue() + " # " + message);
         writer.flush();
     }
 }
