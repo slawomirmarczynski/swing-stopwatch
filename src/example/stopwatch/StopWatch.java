@@ -1,5 +1,8 @@
 package example.stopwatch;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Model stopera. Przechowuje informację o tym, czy pomiar trwa, sumuje
  * zmierzone odcinki czasu oraz okresowo zleca interfejsowi odświeżenie widoku.
@@ -8,11 +11,13 @@ package example.stopwatch;
  * upływu czasu monotonicznego. Wartość zwracana przez {@link #getValue()}
  * jest liczbą sekund z dokładnością do setnych części sekundy.</p>
  */
-public class StopWatch implements Runnable {
+public class StopWatch implements Runnable, Publisher {
     private boolean running;
     private static final long GRANULARITY = 10; // w milisekundach
     private long begin; // w nanosekundach
     private long elapsedNanos; // suma zakończonych odcinków pomiaru
+    private final List<Subscriber> subscriberList = new ArrayList<>();
+
 
     public UserInterface userInterface;
 
@@ -29,7 +34,7 @@ public class StopWatch implements Runnable {
         // wątek. Przerwanie bieżącego wątku kończy pętlę.
         //
         while (!Thread.currentThread().isInterrupted()) {
-            userInterface.update();
+            userInterface.update(this);
             try {
                 //noinspection BusyWait
                 Thread.sleep(GRANULARITY);
@@ -48,7 +53,7 @@ public class StopWatch implements Runnable {
             begin = System.nanoTime();
             running = true;
         }
-        userInterface.update();
+        notifyAllSubscribers();
     }
 
     /**
@@ -60,7 +65,7 @@ public class StopWatch implements Runnable {
         if (running) {
             elapsedNanos += System.nanoTime() - begin;
             running = false;
-            userInterface.update();
+            notifyAllSubscribers();
         }
     }
 
@@ -71,7 +76,25 @@ public class StopWatch implements Runnable {
         running = false;
         elapsedNanos = 0;
         begin = System.nanoTime();
-        userInterface.update();
+        notifyAllSubscribers();
+     }
+
+    @Override
+    public void addSubscriber(Subscriber s) {
+        if (!subscriberList.contains(s)) {
+            subscriberList.add(s);
+        }
+    }
+
+    @Override
+    public void removeAllSubscribers() {
+        subscriberList.clear();
+    }
+
+    private void notifyAllSubscribers(){
+        for (Subscriber s : subscriberList) {
+            s.update(this);
+        }
     }
 
     /**
@@ -84,7 +107,7 @@ public class StopWatch implements Runnable {
      *
      * @return liczba sekund od rozpoczęcia pomiaru, zaokrąglona w dół do setnych
      */
-    public double getValue() {
+    public Object getValue() {
         final long NANOSECONDS_PER_CENTISECOND = 10_000_000;
         long duration = elapsedNanos;
         if (running) {

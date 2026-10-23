@@ -25,7 +25,11 @@ public class Program implements Runnable {
         // referencję do modelu, a model do interfejsu, by móc zlecać odświeżanie.
         //
         StopWatch stopWatch = new StopWatchTraced();
-        new UserInterface(stopWatch);
+        UserInterface userInterface = new UserInterface(stopWatch);
+        TextToSpeech tts = new TextToSpeech();
+
+        stopWatch.addSubscriber(userInterface);
+        stopWatch.addSubscriber(tts);
 
         // Rozpocznij pętlę cyklicznego odświeżania interfejsu.
         // Bezpośrednie wywołanie run() blokuje bieżący wątek.

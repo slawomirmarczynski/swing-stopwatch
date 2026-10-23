@@ -13,7 +13,7 @@ import java.util.Locale;
  * wątków. Dlatego tworzenie okna odbywa się w wątku obsługi zdarzeń Swing
  * (EDT), a aktualizacje wyświetlacza są do tego wątku zlecane.</p>
  */
-public class UserInterface {
+public class UserInterface implements Subscriber {
 
     private final static int horizontalGrids = 3;
     private final static int insetSize = 5;
@@ -58,12 +58,12 @@ public class UserInterface {
      * bezpośrednio w wątku, z którego przyszło powiadomienie. Dzięki temu
      * modyfikacja komponentu Swing odbywa się w bezpiecznym dla niego wątku.</p>
      */
-    public void update() {
+    public void update(Publisher p) {
         // Zleć aktualizację wątkowi EDT, a w nim pobierz bieżącą wartość stopera
         // i ustaw ją jako tekst wyświetlacza. Dlaczego tak? Bo ta metoda będzie
         // wywoływana być może z innego wątku niż EDT.
         EventQueue.invokeLater(() -> display.setText(
-                String.format(Locale.ROOT, "%.2f seconds", stopWatch.getValue())));
+                String.format(Locale.ROOT, "%.2f seconds", (double)(p.getValue()))));
     }
 
     private void createMainWindow() {
