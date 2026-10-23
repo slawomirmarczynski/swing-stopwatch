@@ -1,8 +1,8 @@
 package example.stopwatch;
 
 /**
- * Model stopera. Przechowuje informację o tym, czy pomiar trwa, zapamiętuje
- * jego granice czasowe oraz okresowo zleca interfejsowi odświeżenie widoku.
+ * Model stopera. Przechowuje informację o tym, czy pomiar trwa, sumuje
+ * zmierzone odcinki czasu oraz okresowo zleca interfejsowi odświeżenie widoku.
  *
  * <p>Pomiar bazuje na {@link System#nanoTime()}, który służy do mierzenia
  * upływu czasu monotonicznego. Wartość zwracana przez {@link #getValue()}
@@ -12,7 +12,7 @@ public class StopWatch implements Runnable {
     private boolean running;
     private static final long GRANULARITY = 100; // w milisekundach
     private long begin; // w nanosekundach
-    private long end; // w nanosekundach
+    private long elapsedNanos; // suma zakończonych odcinków pomiaru
 
     public UserInterface userInterface;
 
@@ -39,70 +39,54 @@ public class StopWatch implements Runnable {
     }
 
     /**
-     * Rozpoczyna nowy pomiar od bieżącej chwili. Poprzednia wartość nie jest
-     * zachowywana — początek i koniec pomiaru ustawiane są na ten sam moment.
+     * Rozpoczyna lub wznawia pomiar. Zakończone wcześniej odcinki czasu
+     * pozostają uwzględnione w wyniku.
      */
     public void start() {
-        // Oznacz pomiar jako aktywny i zapamiętaj aktualny czas jako jego początek.
-        // Ustawienie końca na tę samą chwilę oznacza, że początkowy wynik wynosi zero.
-        //
-        running = true;
-        begin = System.nanoTime();
-        end = begin;
+        if (!running) {
+            begin = System.nanoTime();
+            running = true;
+        }
         userInterface.update();
     }
 
     /**
-     * Zatrzymuje trwający pomiar i zapamiętuje chwilę jego zakończenia.
+     * Zatrzymuje trwający pomiar i dodaje jego czas do sumy zmierzonych odcinków.
      * Jeżeli stoper już był zatrzymany, metoda nie zmienia stanu ani nie
      * wysyła dodatkowego powiadomienia.
      */
     public void stop() {
-        // Zatrzymaj pomiar tylko wtedy, gdy jest aktywny: zapamiętaj jego koniec
-        // i od razu zleć odświeżenie widoku, bez czekania na kolejny cykl.
-        //
         if (running) {
+            elapsedNanos += System.nanoTime() - begin;
             running = false;
-            end = System.nanoTime();
             userInterface.update();
         }
     }
 
     /**
-     * Zeruje pomiar, ustawiając jego początek i koniec na bieżącą chwilę.
-     * Stoper po tej operacji pozostaje zatrzymany.
+     * Zeruje pomiar. Stoper po tej operacji pozostaje zatrzymany.
      */
     public void reset() {
-        // Zakończ ewentualny pomiar i ustaw jego początek oraz koniec
-        // na tę samą bieżącą chwilę, co daje wyzerowany wynik.
-        //
         running = false;
+        elapsedNanos = 0;
         begin = System.nanoTime();
-        end = begin;
         userInterface.update();
     }
 
     /**
      * Oblicza aktualny lub ostatnio zmierzony czas w pełnych sekundach.
      *
-     * <p>Podczas działania różnica liczona jest względem bieżącego czasu,
-     * a po zatrzymaniu względem zapamiętanej chwili zakończenia. Dzielenie
-     * przez liczbę nanosekund w sekundzie obcina część ułamkową.</p>
+     * <p>Wynik obejmuje sumę zakończonych odcinków oraz, podczas działania,
+     * czas od ostatniego wznowienia. Dzielenie przez liczbę nanosekund
+     * w sekundzie obcina część ułamkową.</p>
      *
      * @return liczba całkowitych sekund od rozpoczęcia pomiaru
      */
     public long getValue() {
-        // Ustal przelicznik nanosekund na sekundy i oblicz czas trwania:
-        // dla aktywnego pomiaru względem bieżącej chwili, a dla zatrzymanego
-        // względem zapamiętanego końca. Dzielenie całkowitoliczbowe odrzuca
-        // niepełną część sekundy.
-
         final long NANOSECONDS_PER_SECONDS = 1_000_000_000;
-        long duration;
+        long duration = elapsedNanos;
         if (running) {
-            duration = System.nanoTime() - begin;
-        } else {
-            duration = end - begin;
+            duration += System.nanoTime() - begin;
         }
         return duration / NANOSECONDS_PER_SECONDS;
     }

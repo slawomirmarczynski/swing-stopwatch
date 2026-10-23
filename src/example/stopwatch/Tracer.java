@@ -27,12 +27,9 @@
 package example.stopwatch;
 
 import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -40,9 +37,7 @@ public class Tracer {
     private static final DateTimeFormatter TIMESTAMP_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private static class InstanceHolder {
-        private static final Tracer INSTANCE = new Tracer();
-    }
+    private static volatile Tracer instance;
 
     private BufferedWriter writer;
 
@@ -50,24 +45,24 @@ public class Tracer {
     }
 
     public static Tracer getInstance() {
-        return InstanceHolder.INSTANCE;
+        if (instance == null) {
+            synchronized (Tracer.class) {
+                if (instance == null) {
+                    instance = new Tracer();
+                }
+            }
+        }
+        return instance;
     }
 
     public synchronized void log(StopWatch sw, String message) {
         try {
             if (writer == null) {
-                writer = Files.newBufferedWriter(
-                        Path.of("trace.txt"),
-                        StandardCharsets.UTF_8,
-                        StandardOpenOption.CREATE,
-                        StandardOpenOption.APPEND);
+                writer = new BufferedWriter(new FileWriter("trace.txt", true));
             }
-            writer.write(LocalDateTime.now().format(TIMESTAMP_FORMAT));
-            writer.write(" ");
-            writer.write(Long.toString(sw.getValue()));
-            writer.write(" # ");
-            writer.write(message);
-            writer.newLine();
+            writer.write(LocalDateTime.now().format(TIMESTAMP_FORMAT)
+                    + " " + sw.getValue() + " # " + message
+                    + System.lineSeparator());
             writer.flush();
         } catch (IOException e) {
             throw new UncheckedIOException("Nie można dopisać wpisu do trace.txt", e);
