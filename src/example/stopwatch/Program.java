@@ -11,8 +11,6 @@ import javax.swing.*;
  * {@link #run()}.</p>
  */
 public class Program implements Runnable {
-    private UserInterface userInterface;
-    private StopWatch stopWatch;
 
     /**
      * Inicjalizuje elementy aplikacji i rozpoczyna działanie stopera.
@@ -26,8 +24,8 @@ public class Program implements Runnable {
         // Utwórz model stopera i interfejs z kontrolkami. Interfejs przechowuje
         // referencję do modelu, a model do interfejsu, by móc zlecać odświeżanie.
         //
-        stopWatch = new StopWatchTraced();
-        userInterface = new UserInterface(stopWatch);
+        StopWatch stopWatch = new StopWatchTraced();
+        new UserInterface(stopWatch);
 
         // Rozpocznij pętlę cyklicznego odświeżania interfejsu.
         // Bezpośrednie wywołanie run() blokuje bieżący wątek.

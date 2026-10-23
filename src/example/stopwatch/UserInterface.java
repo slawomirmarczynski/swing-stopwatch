@@ -3,6 +3,7 @@ package example.stopwatch;
 import javax.swing.*;
 import java.awt.*;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Locale;
 
 /**
  * Okno graficzne stopera. Klasa tworzy interfejs Swing, przekazuje polecenia
@@ -19,7 +20,7 @@ public class UserInterface {
 
     private JFrame frame;
     private JTextField display;
-    private StopWatch stopWatch;
+    private final StopWatch stopWatch;
 
     /**
      * Tworzy okno, wyświetlacz i przyciski sterujące.
@@ -61,7 +62,8 @@ public class UserInterface {
         // Zleć aktualizację wątkowi EDT, a w nim pobierz bieżącą wartość stopera
         // i ustaw ją jako tekst wyświetlacza. Dlaczego tak? Bo ta metoda będzie
         // wywoływana być może z innego wątku niż EDT.
-        EventQueue.invokeLater(() -> display.setText(stopWatch.getValue() + " seconds"));
+        EventQueue.invokeLater(() -> display.setText(
+                String.format(Locale.ROOT, "%.2f seconds", stopWatch.getValue())));
     }
 
     private void createMainWindow() {
@@ -107,6 +109,7 @@ public class UserInterface {
      * @param column indeks kolumny w układzie siatki
      * @param action operacja wykonywana po kliknięciu przycisku
      */
+    @SuppressWarnings("SameParameterValue")
     private void addButton(String name, int row, int column, Runnable action) {
         JButton button = new JButton(name);
         GridBagConstraints constraints = new GridBagConstraints();

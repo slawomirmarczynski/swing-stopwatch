@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 public class Tracer {
     private static final DateTimeFormatter TIMESTAMP_FORMAT =
@@ -61,7 +62,7 @@ public class Tracer {
                 writer = new BufferedWriter(new FileWriter("trace.txt", true));
             }
             writer.write(LocalDateTime.now().format(TIMESTAMP_FORMAT)
-                    + " " + sw.getValue() + " # " + message
+                    + " " + String.format(Locale.ROOT, "%.2f", sw.getValue()) + " # " + message
                     + System.lineSeparator());
             writer.flush();
         } catch (IOException e) {

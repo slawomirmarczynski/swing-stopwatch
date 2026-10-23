@@ -6,11 +6,11 @@ package example.stopwatch;
  *
  * <p>Pomiar bazuje na {@link System#nanoTime()}, który służy do mierzenia
  * upływu czasu monotonicznego. Wartość zwracana przez {@link #getValue()}
- * jest liczbą całkowitych sekund.</p>
+ * jest liczbą sekund z dokładnością do setnych części sekundy.</p>
  */
 public class StopWatch implements Runnable {
     private boolean running;
-    private static final long GRANULARITY = 100; // w milisekundach
+    private static final long GRANULARITY = 10; // w milisekundach
     private long begin; // w nanosekundach
     private long elapsedNanos; // suma zakończonych odcinków pomiaru
 
@@ -31,6 +31,7 @@ public class StopWatch implements Runnable {
         while (!Thread.currentThread().isInterrupted()) {
             userInterface.update();
             try {
+                //noinspection BusyWait
                 Thread.sleep(GRANULARITY);
             } catch (InterruptedException e) {
                 break;
@@ -74,20 +75,22 @@ public class StopWatch implements Runnable {
     }
 
     /**
-     * Oblicza aktualny lub ostatnio zmierzony czas w pełnych sekundach.
+     * Oblicza aktualny lub ostatnio zmierzony czas w sekundach, z dokładnością
+     * do setnych części sekundy.
      *
      * <p>Wynik obejmuje sumę zakończonych odcinków oraz, podczas działania,
      * czas od ostatniego wznowienia. Dzielenie przez liczbę nanosekund
-     * w sekundzie obcina część ułamkową.</p>
+     * w sekundzie obcina część mniejszą niż setna sekundy.</p>
      *
-     * @return liczba całkowitych sekund od rozpoczęcia pomiaru
+     * @return liczba sekund od rozpoczęcia pomiaru, zaokrąglona w dół do setnych
      */
-    public long getValue() {
-        final long NANOSECONDS_PER_SECONDS = 1_000_000_000;
+    public double getValue() {
+        final long NANOSECONDS_PER_CENTISECOND = 10_000_000;
         long duration = elapsedNanos;
         if (running) {
             duration += System.nanoTime() - begin;
         }
-        return duration / NANOSECONDS_PER_SECONDS;
+        long centiseconds = duration / NANOSECONDS_PER_CENTISECOND;
+        return (double) centiseconds / 100;
     }
 }
