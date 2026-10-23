@@ -34,7 +34,7 @@ public class StopWatch implements Runnable, Publisher {
         // wątek. Przerwanie bieżącego wątku kończy pętlę.
         //
         while (!Thread.currentThread().isInterrupted()) {
-            userInterface.update(this);
+            notifyAllSubscribers();
             try {
                 //noinspection BusyWait
                 Thread.sleep(GRANULARITY);
